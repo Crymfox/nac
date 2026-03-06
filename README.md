@@ -131,6 +131,12 @@ credential_types:
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to get started.
 
+### Automated Releases
+
+This project uses GoReleaser for automated releases. To enable the Homebrew tap distribution, you must:
+1. Create a GitHub Personal Access Token (PAT) with `repo` scope.
+2. Add it as a secret named `TAP_GITHUB_TOKEN` in your repository settings.
+
 ## 📄 License
 
 Distributed under the MIT License. See `LICENSE` for more information.
