@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" alt="nac logo" width="200px" />
+  <img src="assets/logo.png" alt="nac logo" width="330px" />
 </p>
 
 <h1 align="center">nac - n8n As Code</h1>
