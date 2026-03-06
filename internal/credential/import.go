@@ -140,6 +140,9 @@ func Import(ctx context.Context, opts ImportOptions) (*ImportResult, error) {
 		return res, fmt.Errorf("fetching remote credential IDs: %w", err)
 	}
 
+	// 3.1 Fetch personal project ID (for ownership)
+	projectID, _ := opts.Client.GetPersonalProjectID(ctx)
+
 	// 4. Mirror deletes
 	if opts.MirrorDeletes && !opts.DryRun {
 		var toDelete []string
@@ -180,6 +183,13 @@ func Import(ctx context.Context, opts ImportOptions) (*ImportResult, error) {
 			if err := opts.Client.UpsertCredential(ctx, cred); err != nil {
 				res.Errors = append(res.Errors, fmt.Errorf("upserting %q: %w", cred.Name, err))
 				continue
+			}
+
+			// Ensure ownership
+			if projectID != "" {
+				if err := opts.Client.EnsureCredentialOwnership(ctx, cred.ID, projectID); err != nil {
+					res.Errors = append(res.Errors, fmt.Errorf("ensuring ownership for %q: %w", cred.Name, err))
+				}
 			}
 		}
 		res.Imported++

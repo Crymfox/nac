@@ -98,6 +98,9 @@ func Import(ctx context.Context, opts ImportOptions) (*ImportResult, error) {
 		return res, fmt.Errorf("fetching remote workflow IDs: %w", err)
 	}
 
+	// 3.1 Fetch personal project ID (for ownership)
+	projectID, _ := opts.Client.GetPersonalProjectID(ctx)
+
 	// 4. Mirror deletes (if enabled)
 	if opts.MirrorDeletes && !opts.DryRun {
 		var toDelete []string
@@ -186,6 +189,13 @@ func Import(ctx context.Context, opts ImportOptions) (*ImportResult, error) {
 			if err := opts.Client.UpsertWorkflow(ctx, wf); err != nil {
 				res.Errors = append(res.Errors, fmt.Errorf("upserting %q: %w", name, err))
 				continue
+			}
+
+			// Ensure ownership
+			if projectID != "" {
+				if err := opts.Client.EnsureWorkflowOwnership(ctx, id, projectID); err != nil {
+					res.Errors = append(res.Errors, fmt.Errorf("ensuring ownership for %q: %w", name, err))
+				}
 			}
 
 			// Force active/isArchived states

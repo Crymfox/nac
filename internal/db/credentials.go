@@ -99,3 +99,14 @@ func (c *Client) DeleteCredentialsByNames(ctx context.Context, names []string) (
 	}
 	return tag.RowsAffected(), nil
 }
+
+// EnsureCredentialOwnership ensures that a credential is linked to a project in shared_credentials.
+func (c *Client) EnsureCredentialOwnership(ctx context.Context, credentialsId, projectId string) error {
+	query := `
+		INSERT INTO shared_credentials ("credentialsId", "projectId", role)
+		VALUES ($1, $2, 'credential:owner')
+		ON CONFLICT ("credentialsId", "projectId") DO NOTHING
+	`
+	_, err := c.pool.Exec(ctx, query, credentialsId, projectId)
+	return err
+}

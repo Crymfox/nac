@@ -194,3 +194,14 @@ func (c *Client) GetActiveWorkflowIDs(ctx context.Context) ([]string, error) {
 	}
 	return ids, nil
 }
+
+// EnsureWorkflowOwnership ensures that a workflow is linked to a project in shared_workflow.
+func (c *Client) EnsureWorkflowOwnership(ctx context.Context, workflowId, projectId string) error {
+	query := `
+		INSERT INTO shared_workflow ("workflowId", "projectId", role)
+		VALUES ($1, $2, 'workflow:owner')
+		ON CONFLICT ("workflowId", "projectId") DO NOTHING
+	`
+	_, err := c.pool.Exec(ctx, query, workflowId, projectId)
+	return err
+}

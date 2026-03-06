@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/crymfox/nac/internal/config"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Client wraps a pgx connection pool.
@@ -72,4 +72,15 @@ func (c *Client) Close() {
 // Pool returns the underlying pgxpool.
 func (c *Client) Pool() *pgxpool.Pool {
 	return c.pool
+}
+
+// GetPersonalProjectID finds the ID of the default personal project.
+func (c *Client) GetPersonalProjectID(ctx context.Context) (string, error) {
+	var id string
+	query := `SELECT id FROM project WHERE type = 'personal' LIMIT 1`
+	err := c.pool.QueryRow(ctx, query).Scan(&id)
+	if err != nil {
+		return "", fmt.Errorf("finding personal project: %w", err)
+	}
+	return id, nil
 }
