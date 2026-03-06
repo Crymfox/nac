@@ -78,9 +78,15 @@ func Import(ctx context.Context, opts ImportOptions) (*ImportResult, error) {
 
 		id, _ := credMap["id"].(string)
 		credType, _ := credMap["type"].(string)
+		name, _ := credMap["name"].(string)
 
 		folderName := filepath.Base(filepath.Dir(file))
-		displayName := registry.GetDisplayName(credType, folderName)
+
+		// Priority: Use name from JSON, Fallback: Derive from folder
+		displayName := name
+		if displayName == "" {
+			displayName = registry.GetDisplayName(credType, folderName)
+		}
 
 		if !registry.HasType(credType) {
 			res.Errors = append(res.Errors, fmt.Errorf("unknown credential type %q in %s", credType, file))

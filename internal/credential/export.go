@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/crymfox/nac/internal/config"
 	"github.com/crymfox/nac/internal/crypto"
@@ -46,7 +47,6 @@ func Export(ctx context.Context, opts ExportOptions) (*ExportResult, error) {
 		}
 	}
 
-	registry := NewRegistry(opts.Types)
 	expectedFolders := make(map[string]bool)
 
 	for _, cred := range creds {
@@ -73,9 +73,6 @@ func Export(ctx context.Context, opts ExportOptions) (*ExportResult, error) {
 			continue
 		}
 
-		// Create the placeholder version for writing
-		placeholderData := registry.ReplaceSecrets(cred.Type, folderName, dataMap)
-
 		// Check if file exists and compare
 		changed := true
 		if existingFile, err := os.ReadFile(targetFile); err == nil {
@@ -88,19 +85,13 @@ func Export(ctx context.Context, opts ExportOptions) (*ExportResult, error) {
 
 				if existingName == cred.Name && existingType == cred.Type && existingId == cred.ID {
 					// We serialize what we WOULD write, and compare it
-					// directly to what is on disk! Since we deterministically replace secrets with
-					// the exact same ENV: placeholder string every time.
-
-					// Let's build what we want to write
+					// directly to what is on disk!
 					newCredMap := map[string]any{
 						"id":   cred.ID,
 						"name": cred.Name,
 						"type": cred.Type,
+						"data": "ENV:" + strings.ToUpper(folderName),
 					}
-
-					// Let's serialize the placeholder map to a compact JSON string
-					placeholderBytes, _ := json.Marshal(placeholderData)
-					newCredMap["data"] = string(placeholderBytes)
 
 					newCredBytes, _ := json.MarshalIndent(newCredMap, "", "  ")
 
@@ -137,9 +128,8 @@ func Export(ctx context.Context, opts ExportOptions) (*ExportResult, error) {
 				"id":   cred.ID,
 				"name": cred.Name,
 				"type": cred.Type,
+				"data": "ENV:" + strings.ToUpper(folderName),
 			}
-			placeholderBytes, _ := json.Marshal(placeholderData)
-			newCredMap["data"] = string(placeholderBytes)
 
 			outBytes, err := json.MarshalIndent(newCredMap, "", "  ")
 			if err != nil {
