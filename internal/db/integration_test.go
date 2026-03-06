@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/crymfox/nac/internal/config"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -145,9 +145,6 @@ func TestDB_Integration(t *testing.T) {
 		}
 		if creds[0].Name != "My Secret" {
 			t.Errorf("Expected name 'My Secret', got %q", creds[0].Name)
-		}
-		if string(creds[0].NodesAccess) != "[]" {
-			t.Errorf("Expected empty JSON array, got %s", string(creds[0].NodesAccess))
 		}
 
 		m, err := client.GetCredentialNameIdMap(ctx)

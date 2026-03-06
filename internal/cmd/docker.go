@@ -17,14 +17,17 @@ func newUpCmd() *cobra.Command {
 }
 
 func newDownCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "down",
 		Short: "Stop the local n8n Docker Compose stack",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			volumes, _ := cmd.Flags().GetBool("volumes")
 			composeFile := Cfg.Docker.ComposeFile
-			return docker.ComposeDown(composeFile)
+			return docker.ComposeDown(composeFile, volumes)
 		},
 	}
+	cmd.Flags().BoolP("volumes", "v", false, "Remove named volumes")
+	return cmd
 }
 
 func newLogsCmd() *cobra.Command {

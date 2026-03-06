@@ -68,15 +68,13 @@ nac init
 This scaffolds:
 * `nac.yaml` - Configuration and credential type mappings
 * `docker-compose.yaml` - Local n8n development stack
-* `.env.local.example` - Local environment variables
+* `.env.local` - Local environment variables (with a random `N8N_ENCRYPTION_KEY` pre-filled)
 * `n8n_workflows/` & `n8n_credentials/` directories
 * GitHub Actions CI workflow (optional)
 
-Copy the env file and start n8n:
+Start the local stack:
 ```bash
-cp .env.local.example .env.local
-# Set your N8N_ENCRYPTION_KEY inside .env.local
-
+# (Optional) Add your credential secrets to .env.local
 nac up
 ```
 

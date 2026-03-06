@@ -25,12 +25,15 @@ func ComposeUp(composeFile string) error {
 }
 
 // ComposeDown runs docker compose down
-func ComposeDown(composeFile string) error {
+func ComposeDown(composeFile string, removeVolumes bool) error {
 	args := []string{"compose", "-f", composeFile}
 	if _, err := os.Stat(".env.local"); err == nil {
 		args = append(args, "--env-file", ".env.local")
 	}
 	args = append(args, "down")
+	if removeVolumes {
+		args = append(args, "-v")
+	}
 
 	cmd := exec.Command("docker", args...)
 	cmd.Stdout = os.Stdout

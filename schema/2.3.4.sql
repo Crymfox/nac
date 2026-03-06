@@ -23,7 +23,7 @@ CREATE TABLE credentials_entity (
     name character varying(255) NOT NULL,
     type character varying(255) NOT NULL,
     data text NOT NULL,
-    "nodesAccess" json NOT NULL,
+    "nodesAccess" json NOT NULL DEFAULT '[]',
     "createdAt" timestamp without time zone NOT NULL,
     "updatedAt" timestamp without time zone NOT NULL,
     PRIMARY KEY (id)

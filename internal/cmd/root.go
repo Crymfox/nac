@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/crymfox/nac/internal/config"
+	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 )
 
@@ -13,40 +14,35 @@ var (
 	envName string
 	verbose bool
 	dryRun  bool
-
-	// Cfg holds the loaded config, available to all subcommands.
-	Cfg *config.Config
+	Cfg     *config.Config
 )
 
 func NewRootCmd() *cobra.Command {
-	root := &cobra.Command{
-		Use:   "nac",
-		Short: "n8n As Code - manage n8n workflows and credentials as version-controlled files",
-		Long: `nac is a CLI tool that exports n8n workflows and credentials from a Postgres
-database into per-item JSON files, and imports them back into any target
-environment. It enables GitOps for n8n: local development, Git versioning,
-and CI/CD-driven promotion.`,
+	cmd := &cobra.Command{
+		Use:           "nac",
+		Short:         "n8n As Code - manage n8n workflows and credentials as version-controlled files",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			// Skip config loading for init and version commands
-			if cmd.Name() == "init" || cmd.Name() == "version" || cmd.Name() == "help" {
+			// Load .env.local file if it exists. This makes running nac locally easier.
+			_ = godotenv.Load(".env.local")
+
+			// Decide if we need to load the main nac.yaml config
+			switch cmd.CalledAs() {
+			case "init", "version", "help", "completion", "":
 				return nil
+			default:
+				return loadConfig()
 			}
-			// Also skip for the root command itself (no subcommand)
-			if cmd == cmd.Root() {
-				return nil
-			}
-			return loadConfig()
 		},
 	}
 
-	root.PersistentFlags().StringVar(&cfgFile, "config", "nac.yaml", "config file path")
-	root.PersistentFlags().StringVar(&envName, "env", "local", "target environment (local/dev/staging/production)")
-	root.PersistentFlags().BoolVar(&verbose, "verbose", false, "verbose output")
-	root.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "show what would change without modifying anything")
+	cmd.PersistentFlags().StringVar(&cfgFile, "config", "nac.yaml", "config file path")
+	cmd.PersistentFlags().StringVar(&envName, "env", "local", "target environment (local/dev/staging/production)")
+	cmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "verbose output")
+	cmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "show what would change without modifying anything")
 
-	root.AddCommand(
+	cmd.AddCommand(
 		newVersionCmd(),
 		newInitCmd(),
 		newExportCmd(),
@@ -57,8 +53,7 @@ and CI/CD-driven promotion.`,
 		newApiCmd(),
 		newCiCmd(),
 	)
-
-	return root
+	return cmd
 }
 
 // Execute runs the root command.
