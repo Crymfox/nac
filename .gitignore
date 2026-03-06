@@ -1,0 +1,27 @@
+# Binaries
+nac
+nac.exe
+
+# Local environment
+.env.local
+.env.remote.*
+*.env
+
+# Build artifacts
+dist/
+backups/
+
+# Dependencies
+vendor/
+
+# OS files
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/
+
+# Temporary test directories
+test-debug/
+debug-project/
+test-project/

@@ -1,32 +1,51 @@
-# nac - n8n As Code
+<p align="center">
+  <img src="assets/logo.png" alt="nac logo" width="200px" />
+</p>
 
-`nac` is a CLI tool that turns n8n workflows and credentials into version-controlled, CI-deployable code.
+<h1 align="center">nac - n8n As Code</h1>
 
-It enables a true **GitOps workflow for n8n**:
-1. Develop workflows in a local n8n instance
-2. Export them to clean, diff-friendly JSON files
-3. Commit to Git
-4. Import them to remote staging/production environments via CI/CD
+<p align="center">
+  <strong>The missing GitOps link for n8n.</strong><br />
+  Turn workflows and credentials into version-controlled, CI-deployable code with zero runtime dependencies.
+</p>
 
-## Features
+<p align="center">
+  <a href="#features">Features</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#configuration">Configuration</a> •
+  <a href="CONTRIBUTING.md">Contributing</a>
+</p>
 
-* **Zero runtime dependencies**: Single Go binary. Connects directly to the Postgres database. No n8n CLI or Docker required for export/import operations.
-* **Credentials as Code**: Exports credential structures while stripping out secrets. Secrets are replaced with `ENV:FOLDER_NAME` placeholders and injected securely at import time.
-* **Smart Diffing**: Ignores noisy instance-specific metadata (timestamps, version counters) so your Git commits are clean and meaningful.
-* **Cross-Environment Portability**: Automatically remaps internal `executeWorkflow` node references between environments where database IDs differ.
-* **Mirror Mode**: Automatically deletes workflows and credentials in the target environment that no longer exist in the repository.
-* **Local Dev Stack**: Generates a complete, ready-to-use Docker Compose stack (n8n + Postgres + Redis queue workers).
+---
 
-## Installation
+`nac` is a CLI tool designed to treat n8n workflows and credentials as first-class citizens in your development lifecycle. It enables a true **GitOps workflow**: develop locally, version in Git, and deploy to production via CI/CD.
+
+## 🚀 Features
+
+*   **Zero Runtime Dependencies**: Written in Go. Connects directly to Postgres. No need for the n8n CLI or Docker on your host for core operations.
+*   **Credentials as Code**: Safely export credentials. Secrets are replaced with `ENV:PLACEHOLDER` strings and automatically synchronized with your `.env.local` or remote environment files.
+*   **Smart Diffing**: Automatically strips noisy, instance-specific metadata (timestamps, version counters, etc.) so your Git history stays clean.
+*   **Automatic Ownership**: Handles n8n 2.x's project ownership model. Imported workflows and credentials are automatically linked to your default project.
+*   **Cross-Environment Portability**: Automatically remaps internal `executeWorkflow` node references between environments where database IDs differ.
+*   **Mirror Mode**: Keep your remote environment perfectly in sync with your repository by automatically removing items that no longer exist in Git.
+*   **Built-in Troubleshooting**: Includes a wrapper around the n8n REST API to list executions and debug nodes directly from your terminal.
+
+## 🛠 Tech Stack
+
+| Component | Technology | Version |
+|-----------|------------|---------|
+| Language | [Go](https://go.dev/) | 1.24+ |
+| CLI Framework | [Cobra](https://github.com/spf13/cobra) | v1.10 |
+| Database Driver | [pgx](https://github.com/jackc/pgx) | v5.8 |
+| Env Management | [godotenv](https://github.com/joho/godotenv) | v1.5 |
+| Testing | [testcontainers-go](https://github.com/testcontainers/testcontainers-go) | v0.40 |
+
+## 📦 Installation
 
 ### Homebrew (macOS/Linux)
 ```bash
 brew install crymfox/tap/nac
-```
-
-### Go install
-```bash
-go install github.com/crymfox/nac/cmd/nac@latest
 ```
 
 ### Manual Installation (Binary)
@@ -46,118 +65,76 @@ sudo mv nac /usr/local/bin/
 ```
 
 ### Build from source
-
-Prerequisites: Go 1.22+
-
 ```bash
 git clone https://github.com/crymfox/nac.git
 cd nac
-go build -o nac ./cmd/nac
+make build
 ./nac version
 ```
 
-## Quick Start
+## ⚡ Quick Start
 
-Initialize a new nac project in an empty directory:
+Initialize a new project:
 
 ```bash
-mkdir my-n8n-project && cd my-n8n-project
+mkdir my-automation && cd my-automation
 nac init
 ```
 
 This scaffolds:
-* `nac.yaml` - Configuration and credential type mappings
-* `docker-compose.yaml` - Local n8n development stack
-* `.env.local` - Local environment variables (with a random `N8N_ENCRYPTION_KEY` pre-filled)
-* `n8n_workflows/` & `n8n_credentials/` directories
-* GitHub Actions CI workflow (optional)
+*   `nac.yaml`: Main configuration and credential type mappings.
+*   `docker-compose.yaml`: Ready-to-use local development stack.
+*   `.env.local`: Local secrets (includes a generated `N8N_ENCRYPTION_KEY`).
+*   `n8n_workflows/` & `n8n_credentials/`: Where your code lives.
 
-Start the local stack:
+Start your local instance:
 ```bash
-# (Optional) Add your credential secrets to .env.local
 nac up
 ```
 
-Open `http://localhost:5678` and build your workflows!
-
-When you're ready to save your work:
+Open `http://localhost:5678`, build your workflows, then export them:
 ```bash
 nac export workflows
 nac export credentials
-git add . && git commit -m "feat: new workflow"
 ```
 
-## Configuration (nac.yaml)
+Commit and push to trigger your CI/CD pipeline!
 
-The `nac.yaml` file defines your environments and credential types.
+## ⚙️ Configuration
+
+The `nac.yaml` file allows you to define multiple environments and custom credential mappings.
 
 ### Environments
-
-You define target databases. Switch between them using the `--env` flag (defaults to `local`).
-
 ```yaml
 environments:
-  local:
-    db:
-      host: localhost
-      port: 5432
-      database: n8n
-      user: n8n
-      password: n8n
-    encryption_key_env: N8N_ENCRYPTION_KEY
-    
   production:
     db:
       host_env: DB_HOST
-      port_env: DB_PORT
-      database_env: DB_NAME
       user_env: DB_USER
       password_env: DB_PASS
       ssl: true
     encryption_key_env: N8N_ENCRYPTION_KEY
 ```
 
-### Credential Types
-
-`nac` handles credentials via a config-driven builder. You define the fields that make up a credential, which ones are secrets, and what environment variables they map to during import.
-
+### Custom Credential Types
+Define how `nac` should handle your specific credentials:
 ```yaml
 credential_types:
-  openAiApi:
+  myCustomApi:
     fields:
       - name: apiKey
         secret: true
         env_suffix: _API_KEY
-      - name: organizationId
-        optional: true
-        env_suffix: _ORGANIZATION_ID
 ```
-If you export a credential named "My OpenAI", `nac` saves it as `my_openai/credential.json` with the `apiKey` replaced by `ENV:MY_OPENAI_API_KEY`.
-During `nac import credentials`, it reads the `MY_OPENAI_API_KEY` environment variable, injects it, encrypts the payload with the target environment's `N8N_ENCRYPTION_KEY`, and saves it to the database.
 
-See the default `nac.yaml` generated by `nac init` for more examples, including OAuth2 auto-refresh.
+## 🤝 Contributing
 
-## CI/CD Pipeline
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to get started.
 
-`nac` is designed to run in GitHub Actions. Run `nac ci generate` to output a ready-to-use deployment pipeline.
+## 📄 License
 
-When you push changes to `n8n_workflows/` or `n8n_credentials/`:
-1. The pipeline dumps a backup of the remote database (uploaded as a workflow artifact).
-2. Runs `nac import workflows --env production`.
-3. Runs `nac import credentials --env production`.
+Distributed under the MIT License. See `LICENSE` for more information.
 
-## Commands Reference
+---
 
-* `nac init` - Scaffold project
-* `nac up` / `nac down` - Manage local Docker Compose stack
-* `nac export workflows` - Save DB workflows to `n8n_workflows/`
-* `nac export credentials` - Save DB credentials (sanitized) to `n8n_credentials/`
-* `nac import workflows` - Upsert `n8n_workflows/` into DB
-* `nac import credentials` - Upsert `n8n_credentials/` into DB
-* `nac api list-workflows` - List workflows via n8n REST API
-* `nac api list-executions` - List recent executions
-* `nac ci generate` - Generate GitHub Actions pipeline
-
-## Compatibility
-
-`nac` interacts directly with the n8n Postgres database. It is currently pinned and tested against n8n schema version **2.3.4**.
+<p align="center">Built with ❤️ by Crymfox Labs</p>

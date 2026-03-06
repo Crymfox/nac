@@ -19,8 +19,12 @@ var (
 
 func NewRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:           "nac",
-		Short:         "n8n As Code - manage n8n workflows and credentials as version-controlled files",
+		Use:   "nac",
+		Short: "n8n As Code - manage n8n workflows and credentials as version-controlled files",
+		Long: `nac is a CLI tool that exports n8n workflows and credentials from a Postgres
+database into per-item JSON files, and imports them back into any target
+environment. It enables GitOps for n8n: local development, Git versioning,
+and CI/CD-driven promotion.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
