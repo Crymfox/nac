@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/crymfox/nac/internal/config"
 	"github.com/crymfox/nac/internal/credential"
@@ -96,16 +97,36 @@ func newExportCredentialsCmd() *cobra.Command {
 			}
 			defer client.Close()
 
+			// Determine which .env file to update with decrypted secrets
+			updateEnv := ""
+			envName := GetEnvName()
+			if envName == "local" {
+				updateEnv = ".env.local"
+			} else {
+				// Look for .env.<env> or .env.remote.<env>
+				candidates := []string{
+					".env." + envName,
+					".env.remote." + envName,
+				}
+				for _, c := range candidates {
+					if _, err := os.Stat(c); err == nil {
+						updateEnv = c
+						break
+					}
+				}
+			}
+
 			opts := credential.ExportOptions{
 				Client:         client,
 				CredentialsDir: Cfg.Export.CredentialsDir,
 				Types:          Cfg.CredentialTypes,
 				EncryptionKey:  encKey,
+				UpdateEnvFile:  updateEnv,
 				DryRun:         IsDryRun(),
 				Verbose:        IsVerbose(),
 			}
 
-			fmt.Printf("Exporting credentials from %s environment...\n", GetEnvName())
+			fmt.Printf("Exporting credentials from %s environment...\n", envName)
 
 			res, err := credential.Export(ctx, opts)
 			if err != nil {
@@ -116,6 +137,9 @@ func newExportCredentialsCmd() *cobra.Command {
 			fmt.Printf("  Updated:   %d\n", res.Updated)
 			fmt.Printf("  Unchanged: %d\n", res.Unchanged)
 			fmt.Printf("  Removed:   %d\n", res.Removed)
+			if updateEnv != "" {
+				fmt.Printf("  Secrets written to: %s\n", updateEnv)
+			}
 
 			if len(res.Errors) > 0 {
 				fmt.Printf("\nWarnings:\n")

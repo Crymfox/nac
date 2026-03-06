@@ -11,6 +11,7 @@ import (
 	"github.com/crymfox/nac/internal/config"
 	"github.com/crymfox/nac/internal/crypto"
 	"github.com/crymfox/nac/internal/db"
+	"github.com/crymfox/nac/internal/envutil"
 	"github.com/crymfox/nac/internal/workflow"
 )
 
@@ -20,6 +21,7 @@ type ExportOptions struct {
 	CredentialsDir string
 	Types          map[string]config.CredentialType
 	EncryptionKey  string
+	UpdateEnvFile  string // Path to .env file to update with secrets
 	DryRun         bool
 	Verbose        bool
 }
@@ -47,7 +49,9 @@ func Export(ctx context.Context, opts ExportOptions) (*ExportResult, error) {
 		}
 	}
 
+	registry := NewRegistry(opts.Types)
 	expectedFolders := make(map[string]bool)
+	allSecrets := make(map[string]string)
 
 	for _, cred := range creds {
 		if cred.Name == "" {
@@ -71,6 +75,12 @@ func Export(ctx context.Context, opts ExportOptions) (*ExportResult, error) {
 		if err := json.Unmarshal([]byte(decryptedJSON), &dataMap); err != nil {
 			res.Errors = append(res.Errors, fmt.Errorf("parsing decrypted data for %s: %w", cred.Name, err))
 			continue
+		}
+
+		// Extract secrets for .env update
+		secrets := registry.ExtractSecrets(cred.Type, folderName, dataMap)
+		for k, v := range secrets {
+			allSecrets[k] = v
 		}
 
 		// Check if file exists and compare
@@ -140,6 +150,15 @@ func Export(ctx context.Context, opts ExportOptions) (*ExportResult, error) {
 			if err := os.WriteFile(targetFile, outBytes, 0o644); err != nil {
 				res.Errors = append(res.Errors, fmt.Errorf("writing %s: %w", targetFile, err))
 			}
+		}
+	}
+
+	// Update .env file if requested
+	if opts.UpdateEnvFile != "" && len(allSecrets) > 0 && !opts.DryRun {
+		if err := envutil.UpdateEnvFile(opts.UpdateEnvFile, allSecrets); err != nil {
+			res.Errors = append(res.Errors, fmt.Errorf("updating %s: %w", opts.UpdateEnvFile, err))
+		} else if opts.Verbose {
+			fmt.Printf("Updated secrets in %s\n", opts.UpdateEnvFile)
 		}
 	}
 

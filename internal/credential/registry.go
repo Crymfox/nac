@@ -143,6 +143,51 @@ func (r *Registry) GetDisplayName(credType string, folderName string) string {
 	return folderToDisplayName(folderName)
 }
 
+// ExtractSecrets returns a map of env var names to their values for secret fields.
+func (r *Registry) ExtractSecrets(credType string, folderName string, data map[string]any) map[string]string {
+	ct, ok := r.types[credType]
+	if !ok {
+		return nil
+	}
+
+	result := make(map[string]string)
+	envPrefix := strings.ToUpper(folderName)
+
+	// Check if this specific folder is an instance override
+	var instanceOverrides map[string]string
+	if inst, ok := ct.Instances[folderName]; ok {
+		instanceOverrides = inst.Overrides
+	}
+
+	for _, f := range ct.Fields {
+		if !f.Secret {
+			continue
+		}
+
+		// Determine env var name
+		envVar := f.Env
+		if envVar == "" {
+			envVar = envPrefix + f.EnvSuffix
+		}
+
+		// If there is an instance override for the env var name, use that
+		if overrideEnv, ok := instanceOverrides[f.Name+"_env"]; ok {
+			envVar = overrideEnv
+		}
+
+		if val, exists := getNested(data, f.Name); exists {
+			if s, ok := val.(string); ok {
+				// Strip Bearer prefix if it was added by value_transform
+				if inst, ok := ct.Instances[folderName]; ok && inst.Overrides["value_transform"] == "bearer_prefix" {
+					s = strings.TrimPrefix(s, "Bearer ")
+				}
+				result[envVar] = s
+			}
+		}
+	}
+	return result
+}
+
 // GetOAuth2Config returns the OAuth2 config if the type requires it.
 func (r *Registry) GetOAuth2Config(credType string) *config.OAuth2Config {
 	ct, ok := r.types[credType]
