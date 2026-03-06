@@ -50,7 +50,7 @@ changelog:
 
 brews:
   - repository:
-      owner: crymfox
+      owner: Crymfox
       name: homebrew-tap
     commit_author:
       name: goreleaserbot
@@ -58,4 +58,4 @@ brews:
     homepage: "https://github.com/crymfox/nac"
     description: "n8n As Code - Manage n8n workflows and credentials as version-controlled files."
     license: "MIT"
-    folder: Formula
+    directory: Formula
