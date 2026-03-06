@@ -75,12 +75,37 @@ func (c *Client) Pool() *pgxpool.Pool {
 }
 
 // GetPersonalProjectID finds the ID of the default personal project.
+// It first tries to find a project linked to a user, then falls back to any personal project.
 func (c *Client) GetPersonalProjectID(ctx context.Context) (string, error) {
 	var id string
-	query := `SELECT id FROM project WHERE type = 'personal' LIMIT 1`
-	err := c.pool.QueryRow(ctx, query).Scan(&id)
-	if err != nil {
-		return "", fmt.Errorf("finding personal project: %w", err)
+
+	// Check if tables exist first to avoid noisy errors during migrations
+	var exists bool
+	_ = c.pool.QueryRow(ctx, "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'project_relation')").Scan(&exists)
+	if exists {
+		// Try to find the project of the first owner/admin
+		query := `
+			SELECT pr."projectId" 
+			FROM project_relation pr
+			JOIN project p ON p.id = pr."projectId"
+			WHERE p.type = 'personal'
+			LIMIT 1
+		`
+		err := c.pool.QueryRow(ctx, query).Scan(&id)
+		if err == nil {
+			return id, nil
+		}
 	}
-	return id, nil
+
+	_ = c.pool.QueryRow(ctx, "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'project')").Scan(&exists)
+	if exists {
+		// Fallback to any personal project
+		query := `SELECT id FROM project WHERE type = 'personal' LIMIT 1`
+		err := c.pool.QueryRow(ctx, query).Scan(&id)
+		if err == nil {
+			return id, nil
+		}
+	}
+
+	return "", fmt.Errorf("no personal project found")
 }

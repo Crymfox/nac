@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/crymfox/nac/internal/db"
+	"github.com/google/uuid"
 )
 
 // ImportOptions configures the import process.
@@ -46,7 +48,6 @@ func Import(ctx context.Context, opts ImportOptions) (*ImportResult, error) {
 		return res, fmt.Errorf("walking workflows dir: %w", err)
 	}
 	if os.IsNotExist(err) {
-		// Directory doesn't exist, nothing to import
 		return res, nil
 	}
 
@@ -99,9 +100,25 @@ func Import(ctx context.Context, opts ImportOptions) (*ImportResult, error) {
 	}
 
 	// 3.1 Fetch personal project ID (for ownership)
-	projectID, _ := opts.Client.GetPersonalProjectID(ctx)
+	// Retry for up to 10 seconds (n8n might be initializing)
+	var projectID string
+	for i := 0; i < 10; i++ {
+		id, err := opts.Client.GetPersonalProjectID(ctx)
+		if err == nil && id != "" {
+			projectID = id
+			break
+		}
+		if opts.Verbose {
+			fmt.Println("Waiting for n8n to initialize default project...")
+		}
+		time.Sleep(2 * time.Second)
+	}
 
-	// 4. Mirror deletes (if enabled)
+	if projectID == "" {
+		res.Errors = append(res.Errors, fmt.Errorf("no personal project found. If this is a fresh install, please visit the n8n UI to complete setup"))
+	}
+
+	// 4. Mirror deletes
 	if opts.MirrorDeletes && !opts.DryRun {
 		var toDelete []string
 		for remoteName := range remoteNameToId {
@@ -113,11 +130,7 @@ func Import(ctx context.Context, opts ImportOptions) (*ImportResult, error) {
 		if len(toDelete) > 0 {
 			if opts.Verbose {
 				fmt.Printf("Mirror mode: deleting %d workflows missing from repo\n", len(toDelete))
-				for _, name := range toDelete {
-					fmt.Printf("  - %s\n", name)
-				}
 			}
-
 			affected, err := opts.Client.DeleteWorkflowsByNames(ctx, toDelete)
 			if err != nil {
 				return res, fmt.Errorf("deleting workflows: %w", err)
@@ -126,37 +139,29 @@ func Import(ctx context.Context, opts ImportOptions) (*ImportResult, error) {
 		}
 	}
 
-	// 5. Process and Upsert each workflow
+	// 5. Process and Upsert
 	for _, wfMap := range localWorkflows {
 		name := wfMap["name"].(string)
-
-		// Remap ID if it exists remotely
 		if remoteId, exists := remoteNameToId[name]; exists {
 			wfMap["id"] = remoteId
 		}
 
-		// Read back ID (might be the original local one if it's new)
 		id, _ := wfMap["id"].(string)
 		if id == "" {
-			// n8n requires an ID. Ideally we should generate a nanoid here,
-			// but we can let the DB or next export fix it.
-			// Actually, n8n workflows almost always have an ID from export.
-			res.Errors = append(res.Errors, fmt.Errorf("workflow %q has no ID after mapping", name))
+			res.Errors = append(res.Errors, fmt.Errorf("workflow %q has no ID", name))
 			continue
 		}
 
-		// Remap executeWorkflow references
 		if nodesInterface, ok := wfMap["nodes"].([]any); ok {
 			remappedNodes := RemapExecuteWorkflowReferences(nodesInterface, localIdToName, remoteNameToId)
 			wfMap["nodes"] = remappedNodes
 		}
 
-		// Build db.Workflow struct
 		active, _ := wfMap["active"].(bool)
 		isArchived, _ := wfMap["isArchived"].(bool)
 		versionId, _ := wfMap["versionId"].(string)
-		if versionId == "" {
-			versionId = "0"
+		if versionId == "" || versionId == "0" {
+			versionId = uuid.New().String()
 		}
 
 		wf := db.Workflow{
@@ -170,7 +175,6 @@ func Import(ctx context.Context, opts ImportOptions) (*ImportResult, error) {
 		wf.Nodes = encodeJSON(wfMap["nodes"], "[]")
 		wf.Connections = encodeJSON(wfMap["connections"], "{}")
 		wf.Settings = encodeJSON(wfMap["settings"], "{}")
-
 		if v, ok := wfMap["staticData"]; ok && v != nil {
 			wf.StaticData = encodeJSON(v, "")
 		}
@@ -198,9 +202,6 @@ func Import(ctx context.Context, opts ImportOptions) (*ImportResult, error) {
 				}
 			}
 
-			// Force active/isArchived states
-			// This handles cases where Upsert doesn't perfectly update boolean flags
-			// depending on Postgres defaults or conflict clauses.
 			if err := opts.Client.EnforceWorkflowState(ctx, name, active, isArchived, opts.PublishActive); err != nil {
 				res.Errors = append(res.Errors, fmt.Errorf("enforcing state for %q: %w", name, err))
 				continue
