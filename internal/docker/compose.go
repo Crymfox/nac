@@ -9,7 +9,13 @@ import (
 
 // ComposeUp runs docker compose up -d
 func ComposeUp(composeFile string) error {
-	cmd := exec.Command("docker", "compose", "-f", composeFile, "up", "-d")
+	args := []string{"compose", "-f", composeFile}
+	if _, err := os.Stat(".env.local"); err == nil {
+		args = append(args, "--env-file", ".env.local")
+	}
+	args = append(args, "up", "-d")
+
+	cmd := exec.Command("docker", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -20,7 +26,13 @@ func ComposeUp(composeFile string) error {
 
 // ComposeDown runs docker compose down
 func ComposeDown(composeFile string) error {
-	cmd := exec.Command("docker", "compose", "-f", composeFile, "down")
+	args := []string{"compose", "-f", composeFile}
+	if _, err := os.Stat(".env.local"); err == nil {
+		args = append(args, "--env-file", ".env.local")
+	}
+	args = append(args, "down")
+
+	cmd := exec.Command("docker", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -31,7 +43,11 @@ func ComposeDown(composeFile string) error {
 
 // ComposeLogs runs docker compose logs -f
 func ComposeLogs(composeFile string, service string) error {
-	args := []string{"compose", "-f", composeFile, "logs", "-f"}
+	args := []string{"compose", "-f", composeFile}
+	if _, err := os.Stat(".env.local"); err == nil {
+		args = append(args, "--env-file", ".env.local")
+	}
+	args = append(args, "logs", "-f")
 	if service != "" {
 		args = append(args, service)
 	}
