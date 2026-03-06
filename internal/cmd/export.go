@@ -1,8 +1,13 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/crymfox/nac/internal/config"
+	"github.com/crymfox/nac/internal/credential"
+	"github.com/crymfox/nac/internal/db"
+	"github.com/crymfox/nac/internal/workflow"
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +30,45 @@ func newExportWorkflowsCmd() *cobra.Command {
 		Use:   "workflows",
 		Short: "Export workflows from the database to per-folder JSON files",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("[nac] export workflows: not yet implemented (Phase 3)")
+			env, err := GetEnvironment()
+			if err != nil {
+				return err
+			}
+
+			ctx := context.Background()
+			client, err := db.NewClient(ctx, env.DB)
+			if err != nil {
+				return err
+			}
+			defer client.Close()
+
+			opts := workflow.ExportOptions{
+				Client:       client,
+				WorkflowsDir: Cfg.Export.WorkflowsDir,
+				IgnoreFields: Cfg.Export.IgnoreFields,
+				DryRun:       IsDryRun(),
+				Verbose:      IsVerbose(),
+			}
+
+			fmt.Printf("Exporting workflows from %s environment...\n", GetEnvName())
+
+			res, err := workflow.Export(ctx, opts)
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("\nExport complete:\n")
+			fmt.Printf("  Updated:   %d\n", res.Updated)
+			fmt.Printf("  Unchanged: %d\n", res.Unchanged)
+			fmt.Printf("  Removed:   %d\n", res.Removed)
+
+			if len(res.Errors) > 0 {
+				fmt.Printf("\nWarnings:\n")
+				for _, err := range res.Errors {
+					fmt.Printf("  - %v\n", err)
+				}
+			}
+
 			return nil
 		},
 	}
@@ -36,7 +79,51 @@ func newExportCredentialsCmd() *cobra.Command {
 		Use:   "credentials",
 		Short: "Export credentials from the database to per-folder JSON files",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("[nac] export credentials: not yet implemented (Phase 4)")
+			env, err := GetEnvironment()
+			if err != nil {
+				return err
+			}
+
+			encKey, err := config.ResolveEncryptionKey(*env)
+			if err != nil {
+				return err
+			}
+
+			ctx := context.Background()
+			client, err := db.NewClient(ctx, env.DB)
+			if err != nil {
+				return err
+			}
+			defer client.Close()
+
+			opts := credential.ExportOptions{
+				Client:         client,
+				CredentialsDir: Cfg.Export.CredentialsDir,
+				Types:          Cfg.CredentialTypes,
+				EncryptionKey:  encKey,
+				DryRun:         IsDryRun(),
+				Verbose:        IsVerbose(),
+			}
+
+			fmt.Printf("Exporting credentials from %s environment...\n", GetEnvName())
+
+			res, err := credential.Export(ctx, opts)
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("\nExport complete:\n")
+			fmt.Printf("  Updated:   %d\n", res.Updated)
+			fmt.Printf("  Unchanged: %d\n", res.Unchanged)
+			fmt.Printf("  Removed:   %d\n", res.Removed)
+
+			if len(res.Errors) > 0 {
+				fmt.Printf("\nWarnings:\n")
+				for _, err := range res.Errors {
+					fmt.Printf("  - %v\n", err)
+				}
+			}
+
 			return nil
 		},
 	}

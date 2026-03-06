@@ -54,6 +54,8 @@ and CI/CD-driven promotion.`,
 		newUpCmd(),
 		newDownCmd(),
 		newLogsCmd(),
+		newApiCmd(),
+		newCiCmd(),
 	)
 
 	return root

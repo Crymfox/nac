@@ -1,8 +1,7 @@
 package cmd
 
 import (
-	"fmt"
-
+	"github.com/crymfox/nac/internal/docker"
 	"github.com/spf13/cobra"
 )
 
@@ -11,8 +10,8 @@ func newUpCmd() *cobra.Command {
 		Use:   "up",
 		Short: "Start the local n8n Docker Compose stack",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("[nac] up: not yet implemented (Phase 5)")
-			return nil
+			composeFile := Cfg.Docker.ComposeFile
+			return docker.ComposeUp(composeFile)
 		},
 	}
 }
@@ -22,8 +21,8 @@ func newDownCmd() *cobra.Command {
 		Use:   "down",
 		Short: "Stop the local n8n Docker Compose stack",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("[nac] down: not yet implemented (Phase 5)")
-			return nil
+			composeFile := Cfg.Docker.ComposeFile
+			return docker.ComposeDown(composeFile)
 		},
 	}
 }
@@ -34,8 +33,12 @@ func newLogsCmd() *cobra.Command {
 		Short: "Tail Docker Compose logs",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("[nac] logs: not yet implemented (Phase 5)")
-			return nil
+			service := ""
+			if len(args) > 0 {
+				service = args[0]
+			}
+			composeFile := Cfg.Docker.ComposeFile
+			return docker.ComposeLogs(composeFile, service)
 		},
 	}
 }
