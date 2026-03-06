@@ -29,6 +29,33 @@ brew install crymfox/tap/nac
 go install github.com/crymfox/nac/cmd/nac@latest
 ```
 
+### Manual Installation (Binary)
+
+**Linux (amd64)**
+```bash
+curl -L https://github.com/crymfox/nac/releases/latest/download/nac_Linux_x86_64.tar.gz | tar xz
+chmod +x nac
+sudo mv nac /usr/local/bin/
+```
+
+**macOS (Apple Silicon)**
+```bash
+curl -L https://github.com/crymfox/nac/releases/latest/download/nac_Darwin_arm64.tar.gz | tar xz
+chmod +x nac
+sudo mv nac /usr/local/bin/
+```
+
+### Build from source
+
+Prerequisites: Go 1.22+
+
+```bash
+git clone https://github.com/crymfox/nac.git
+cd nac
+go build -o nac ./cmd/nac
+./nac version
+```
+
 ## Quick Start
 
 Initialize a new nac project in an empty directory:
