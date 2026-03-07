@@ -52,14 +52,14 @@ brew install crymfox/tap/nac
 
 **Linux (amd64)**
 ```bash
-curl -L https://github.com/crymfox/nac/releases/latest/download/nac_Linux_x86_64.tar.gz | tar xz
+curl -L https://github.com/crymfox/nac/releases/latest/download/nac_Linux_x86_64.tar.gz | tar xfz
 chmod +x nac
 sudo mv nac /usr/local/bin/
 ```
 
 **macOS (Apple Silicon)**
 ```bash
-curl -L https://github.com/crymfox/nac/releases/latest/download/nac_Darwin_arm64.tar.gz | tar xz
+curl -L https://github.com/crymfox/nac/releases/latest/download/nac_Darwin_arm64.tar.gz | tar xfz
 chmod +x nac
 sudo mv nac /usr/local/bin/
 ```
