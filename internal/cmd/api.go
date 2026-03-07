@@ -10,12 +10,30 @@ import (
 )
 
 func getAPIClient() *n8napi.Client {
-	// N8N_API_KEY can be set in the shell or .env.local
-	// Since loadConfig() doesn't auto-load .env.local into os env vars globally,
-	// we should probably check if we can source it or just rely on the user having it exported.
-	// For now, assume it's exported or in the environment config.
-	apiKey := os.Getenv("N8N_API_KEY")
-	baseURL := os.Getenv("N8N_API_URL")
+	var apiKey, baseURL string
+
+	// Try to get from environment configuration if config is loaded
+	if Cfg != nil && envName != "" {
+		if env, err := GetEnvironment(); err == nil {
+			// Try to get API key from configured environment variable
+			if env.APIKeyEnv != "" {
+				apiKey = os.Getenv(env.APIKeyEnv)
+			}
+
+			// Try to get API URL from configured environment variable
+			if env.APIUrlEnv != "" {
+				baseURL = os.Getenv(env.APIUrlEnv)
+			}
+		}
+	}
+
+	// Fall back to default environment variables if not configured in nac.yaml
+	if apiKey == "" {
+		apiKey = os.Getenv("N8N_API_KEY")
+	}
+	if baseURL == "" {
+		baseURL = os.Getenv("N8N_API_URL")
+	}
 
 	return n8napi.NewClient(baseURL, apiKey)
 }

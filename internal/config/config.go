@@ -41,6 +41,8 @@ func Defaults() *Config {
 					SSL:      false,
 				},
 				EncryptionKeyEnv: "N8N_ENCRYPTION_KEY",
+				APIKeyEnv:        "N8N_API_KEY",
+				APIUrlEnv:        "N8N_API_URL",
 			},
 		},
 		Export: ExportConfig{

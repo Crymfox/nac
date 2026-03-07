@@ -23,6 +23,8 @@ environments:
       ssl: false
     encryption_key_env: N8N_ENCRYPTION_KEY
     encryption_key_list_env: N8N_ENCRYPTION_KEY_LIST
+    api_key_env: N8N_API_KEY
+    api_url_env: N8N_API_URL
 
   dev:
     db:
@@ -34,6 +36,8 @@ environments:
       ssl: true
       ssl_reject_unauthorized: false
     encryption_key_env: N8N_ENCRYPTION_KEY
+    api_key_env: N8N_API_KEY
+    api_url_env: N8N_API_URL
 
   staging:
     db:
@@ -44,6 +48,8 @@ environments:
       password_env: DB_POSTGRESDB_PASSWORD
       ssl: true
     encryption_key_env: N8N_ENCRYPTION_KEY
+    api_key_env: N8N_API_KEY
+    api_url_env: N8N_API_URL
 
   production:
     db:
@@ -54,6 +60,8 @@ environments:
       password_env: DB_POSTGRESDB_PASSWORD
       ssl: true
     encryption_key_env: N8N_ENCRYPTION_KEY
+    api_key_env: N8N_API_KEY
+    api_url_env: N8N_API_URL
 
 # =============================================================================
 # Export settings

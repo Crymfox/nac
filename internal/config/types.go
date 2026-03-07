@@ -15,6 +15,8 @@ type Environment struct {
 	DB                   DBConfig `yaml:"db" mapstructure:"db"`
 	EncryptionKeyEnv     string   `yaml:"encryption_key_env" mapstructure:"encryption_key_env"`
 	EncryptionKeyListEnv string   `yaml:"encryption_key_list_env,omitempty" mapstructure:"encryption_key_list_env"`
+	APIKeyEnv            string   `yaml:"api_key_env,omitempty" mapstructure:"api_key_env"`
+	APIUrlEnv            string   `yaml:"api_url_env,omitempty" mapstructure:"api_url_env"`
 }
 
 // DBConfig holds Postgres connection settings.
