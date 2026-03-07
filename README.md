@@ -48,6 +48,12 @@
 brew install crymfox/tap/nac
 ```
 
+### Arch Linux (AUR)
+```bash
+# Using an AUR helper (like yay or paru)
+yay -S nac-bin
+```
+
 ### Manual Installation (Binary)
 
 **Linux (amd64)**
