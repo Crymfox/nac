@@ -3,7 +3,7 @@ package config
 // Build-time variables set via ldflags.
 var (
 	// Version is the nac CLI version (set by goreleaser or ldflags).
-	Version = "dev"
+	Version = "0.1.2"
 
 	// Commit is the git commit hash.
 	Commit = "none"

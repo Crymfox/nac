@@ -32,12 +32,10 @@ and CI/CD-driven promotion.`,
 			_ = godotenv.Load(".env.local")
 
 			// Decide if we need to load the main nac.yaml config
-			switch cmd.CalledAs() {
-			case "init", "version", "help", "completion", "":
+			if isConfigFreeCommand(cmd) {
 				return nil
-			default:
-				return loadConfig()
 			}
+			return loadConfig()
 		},
 	}
 
@@ -93,6 +91,26 @@ func IsVerbose() bool {
 // IsDryRun returns whether dry-run mode is on.
 func IsDryRun() bool {
 	return dryRun
+}
+
+// isConfigFreeCommand returns true if the command does not require a nac.yaml file.
+func isConfigFreeCommand(cmd *cobra.Command) bool {
+	// Check the command name itself
+	name := cmd.Name()
+	if name == "init" || name == "version" || name == "help" || name == "completion" || name == "" {
+		return true
+	}
+
+	// Check if any parent is 'completion' or 'help' (for subcommands like 'completion bash')
+	curr := cmd
+	for curr != nil {
+		if curr.Name() == "completion" || curr.Name() == "help" {
+			return true
+		}
+		curr = curr.Parent()
+	}
+
+	return false
 }
 
 func loadConfig() error {
