@@ -70,6 +70,11 @@ chmod +x nac
 sudo mv nac /usr/local/bin/
 ```
 
+**Windows (x64)**
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/crymfox/nac/main/install.ps1'))
+```
+
 ### Build from source
 ```bash
 git clone https://github.com/crymfox/nac.git
