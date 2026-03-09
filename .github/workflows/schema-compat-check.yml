@@ -41,9 +41,9 @@ jobs:
             -e DB_POSTGRESDB_USER=n8n \
             -e DB_POSTGRESDB_PASSWORD=n8n \
             -e N8N_ENCRYPTION_KEY=test_key_for_schema_check \
-            n8nio/n8n:${{ "${{ steps.latest.outputs.latest }}" }} \
+            n8nio/n8n:${{ steps.latest.outputs.latest }} \
             n8n start --tunnel &
-          sleep 30 && docker stop $(docker ps -q --filter ancestor=n8nio/n8n:${{ "${{ steps.latest.outputs.latest }}" }})
+          sleep 30 && docker stop $(docker ps -q --filter ancestor=n8nio/n8n:${{ steps.latest.outputs.latest }})
 
       - name: Dump new schema
         run: |
@@ -54,7 +54,7 @@ jobs:
       - name: Diff schemas
         id: diff
         run: |
-          DIFF=$(diff schema/${{ "${{ steps.latest.outputs.pinned }}" }}.sql schema/new.sql || true)
+          DIFF=$(diff schema/${{ steps.latest.outputs.pinned }}.sql schema/new.sql || true)
           if [ -z "$DIFF" ]; then
             echo "status=compatible" >> $GITHUB_OUTPUT
           else
@@ -81,8 +81,8 @@ jobs:
           script: |
             const fs = require('fs');
             const diff = fs.readFileSync('schema/diff.txt', 'utf8');
-            const latest = '${{ "${{ steps.latest.outputs.latest }}" }}';
-            const pinned = '${{ "${{ steps.latest.outputs.pinned }}" }}';
+            const latest = '${{ steps.latest.outputs.latest }}';
+            const pinned = '${{ steps.latest.outputs.pinned }}';
 
             await github.rest.issues.create({
               owner: context.repo.owner,
